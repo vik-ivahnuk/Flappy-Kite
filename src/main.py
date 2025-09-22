@@ -1,3 +1,5 @@
-import pygame
+from game import Game
 
-print('Kite')
+if __name__ == '__main__':
+    game = Game()
+    game.run()
