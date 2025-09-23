@@ -36,8 +36,23 @@ class Game:
         self.velocity_y = 0
         self.gravity = 0.4
         self.score = 0
+        self.prev_score = -0
 
         pygame.init()
+        pygame.mixer.init()
+
+        self.flap_sound = pygame.mixer.Sound(FLAP_SOUND)
+        self.flap_sound.set_volume(0.3)
+
+        self.point_sound = pygame.mixer.Sound(POINT_SOUND)
+        self.point_sound.set_volume(0.3)
+
+        self.game_over_sound = pygame.mixer.Sound(GAME_OVER_SOUND)
+        self.game_over_sound.set_volume(0.3)
+
+        self.menu_ost = pygame.mixer.Sound(MENU_OST)
+        self.menu_ost.set_volume(0.2)
+        self.menu_ost.play(loops=-1)
 
         self.window = pygame.display.set_mode((GAME_WIDTH, GAME_HEIGHT))
         pygame.display.set_caption("Flappy Kite")
@@ -65,7 +80,6 @@ class Game:
         self.clock.tick(60)
 
         self.record = self.upload_record()
-        print(self.record)
 
     def upload_record(self):
         try:
@@ -121,18 +135,17 @@ class Game:
             self.window.blit(game_over_image, (0, 0))
             self.print_text("Game Over", FONT, 40, GAME_WIDTH / 2, GAME_HEIGHT / 2 - 260, WHITE)
             score_text, record_text = "Score: ", "Record: "
+
             prev_record = self.record
             if self.score > self.record:
                 score_text = "New record - " + score_text
                 record_text = "Previous " + record_text
                 with open(FILE_RECORDS, "w") as f:
-                    f.write(str(self.score))
+                    f.write(str(int(self.score)))
                 self.record = self.score
 
             self.print_text(score_text + str(int(self.score)), FONT, 25, GAME_WIDTH / 2, GAME_HEIGHT / 2 - 95, WHITE)
             self.print_text(record_text + str(int(prev_record)), FONT, 20, GAME_WIDTH / 2, GAME_HEIGHT / 2 - 60, WHITE)
-
-
 
             self.draw_button("Play Again", self.play_again_button, 20, BROWN, BEIGE, 10)
             self.draw_button("Menu", self.back_to_menu_button, 20, BROWN, BEIGE, 10)
@@ -149,7 +162,9 @@ class Game:
 
         if self.poki.y > GAME_HEIGHT:
             self.game_state = GameState.GAME_OVER
-            pygame.time.delay(500)
+            self.game_over_sound.play()
+            pygame.time.delay(TIME_DELAY)
+            self.menu_ost.play(loops=-1)
             return
 
         for column in self.columns:
@@ -158,10 +173,15 @@ class Game:
             if not column.passed and self.poki.x > column.x + column.width:
                 self.score += 0.5
                 column.passed = True
+                if self.score - self.prev_score == 1:
+                    self.point_sound.play()
+                    self.prev_score = self.score
 
             if self.poki.colliderect(column):
                 self.game_state = GameState.GAME_OVER
-                pygame.time.delay(500)
+                self.game_over_sound.play()
+                pygame.time.delay(TIME_DELAY)
+                self.menu_ost.play(loops=-1)
                 return
 
         while len(self.columns) > 0 and self.columns[0].x < -column_width:
@@ -190,18 +210,21 @@ class Game:
                 if event.type == self.create_columns_timer and self.game_state is GameState.PLAYING:
                     self.create_columns()
 
-                if event.type == pygame.KEYDOWN:
+                if event.type == pygame.KEYDOWN and self.game_state is GameState.PLAYING:
                     if event.key in (pygame.K_SPACE, pygame.K_x, pygame.K_UP):
                         self.velocity_y = -6
+                        self.flap_sound.play()
 
                 if event.type == pygame.MOUSEBUTTONDOWN and self.game_state is GameState.GAME_OVER:
                     self.poki.y = poki_y
                     self.velocity_y = 0
                     self.columns.clear()
                     self.score = 0
+                    self.prev_score = 0
                     if self.play_again_button.collidepoint(event.pos):
                         self.game_state = GameState.PLAYING
                         self.click_button_effect("Play Again", self.play_again_button, 20, BROWN, BEIGE, 10)
+                        self.menu_ost.stop()
                     if self.back_to_menu_button.collidepoint(event.pos):
                         self.game_state = GameState.MENU
                         self.click_button_effect("Menu", self.back_to_menu_button, 20, BROWN, BEIGE, 10)
@@ -213,6 +236,7 @@ class Game:
                     if self.play_button.collidepoint(event.pos):
                         self.game_state = GameState.PLAYING
                         self.click_button_effect("Play", self.play_button, 20, BROWN, BEIGE, 10)
+                        self.menu_ost.stop()
                     if self.exit_button.collidepoint(event.pos):
                         self.click_button_effect("Exit", self.exit_button, 20, BROWN, BEIGE, 10)
                         pygame.quit()

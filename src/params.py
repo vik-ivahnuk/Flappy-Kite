@@ -13,6 +13,8 @@ FONT = "Comic Sans MS"
 GAME_WIDTH = 360
 GAME_HEIGHT = 640
 
+TIME_DELAY = 700
+
 poki_x = GAME_WIDTH / 4
 poki_y = GAME_HEIGHT / 2
 poki_width = 79
@@ -40,3 +42,8 @@ top_column_image = pygame.transform.scale(top_column_image, (column_width, colum
 
 bottom_column_image = pygame.image.load("../assets/column-bottom.png")
 bottom_column_image = pygame.transform.scale(bottom_column_image, (column_width, column_height))
+
+FLAP_SOUND = "../assets/flappy_sound.mp3"
+POINT_SOUND = "../assets/point_sound.mp3"
+GAME_OVER_SOUND = "../assets/game_over_sound.mp3"
+MENU_OST = "../assets/menu_ost.mp3"
